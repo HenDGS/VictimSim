@@ -20,52 +20,42 @@ class Explorer(AbstractAgent):
         self.resc = resc  # reference to the rescuer agent
         self.rtime = self.TLIM  # remaining time to explore
 
+        # Initialize the stack with the base position.
+        self.stack = [(self.body.x_base, self.body.y_base)]
+        # Initialize the set of visited positions with the base position.
+        self.visited = set([(self.body.x_base, self.body.y_base)])
+
     def deliberate(self) -> bool:
-        """ The agent chooses the next action. The simulator calls this
-        method at each cycle. Must be implemented in every agent"""
+        """
+        The agent chooses the next action. Execute the exploration using a depth-first search (DFS) algorithm
+        """
 
         # No more actions, time almost ended
         if self.rtime < 10.0:
-            # time to wake up the rescuer
-            # pass the walls and the victims (here, they're empty)
             print(f"{self.NAME} I believe I've remaining time of {self.rtime:.1f}")
             self.resc.go_save_victims([], [])
             return False
 
-        # dx = random.choice([-1, 0, 1])
-        #
-        # if dx == 0:
-        #     dy = random.choice([-1, 1])
-        # else:
-        #     dy = random.choice([-1, 0, 1])
-
-        # use A* to find the next position
-
-        # Check the neighborhood obstacles
-        obstacles = self.body.check_obstacles()
-
-        # Moves the body to another position
-        result = self.body.walk(dx, dy)
-
-        # Update remaining time
-        if dx != 0 and dy != 0:
-            self.rtime -= self.COST_DIAG
+        # Make moves in all possible directions, -1 moves in left or up
+        dxs, dys = [0, 1, 0, -1], [1, 0, -1, 0]
+        for dx, dy in zip(dxs, dys):
+            new_x, new_y = self.stack[-1][0] + dx, self.stack[-1][1] + dy
+            if 0 <= new_x < self.env.dic["GRID_WIDTH"] and 0 <= new_y < self.env.dic["GRID_HEIGHT"]:
+                if (new_x, new_y) not in self.visited and self.body.walk(dx, dy) == PhysAgent.EXECUTED:
+                    self.visited.add((new_x, new_y))
+                    self.stack.append((new_x, new_y))
+                    self.rtime -= (self.COST_DIAG if dy and dx else self.COST_LINE)
+                    break
         else:
-            self.rtime -= self.COST_LINE
+            # If we are here it means we got stuck, unroll with stack
+            if len(self.stack) > 1:
+                self.stack.pop(-1)
 
-        # Test the result of the walk action
-        if result == PhysAgent.BUMPED:
-            walls = 1  # build the map- to do
-            # print(self.name() + ": wall or grid limit reached")
-
-        if result == PhysAgent.EXECUTED:
-            # check for victim returns -1 if there is no victim or the sequential
-            # the sequential number of a found victim
-            seq = self.body.check_for_victim()
-            if seq >= 0:
-                vs = self.body.read_vital_signals(seq)
-                self.rtime -= self.COST_READ
-                # print("exp: read vital signals of " + str(seq))
-                # print(vs)
-
+        seq = self.body.check_for_victim()
+        vs = []
+        if seq >= 0:
+            vs = self.body.read_vital_signals(seq)
+            self.rtime -= self.COST_READ
+            # print(f"Exp: read vital signals of {seq}")
+            # print(vs)
         return True
