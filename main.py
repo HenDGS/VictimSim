@@ -26,7 +26,7 @@ def main(data_folder_name):
     # Explorer needs to know rescuer to send the map
     # that's why rescuer is instatiated before
     exp = Explorer(env, explorer_file, resc, 1)
-    exp2 = Explorer(env, explorer_file, resc, 2)
+    # exp2 = Explorer(env, explorer_file, resc, 2)
 
     # Run the environment simulator
     env.run()
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         data_folder_name = sys.argv[1]
     else:
-        data_folder_name = "data"
+        # data_folder_name = "data"
+        data_folder_name = "datasets/data_12x12_10vic"
 
     main(data_folder_name)
