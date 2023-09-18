@@ -53,25 +53,25 @@ class Explorer(AbstractAgent):
 
             # map dx, dy to direction
             if dx == 0 and dy == 1:
-                direction = "up"
+                direction = "down"
             elif dx == 1 and dy == 1:
-                direction = "up-right"
+                direction = "down-right"
             elif dx == 1 and dy == 0:
                 direction = "right"
             elif dx == 1 and dy == -1:
-                direction = "down-right"
+                direction = "up-right"
             elif dx == 0 and dy == -1:
-                direction = "down"
+                direction = "up"
             elif dx == -1 and dy == -1:
-                direction = "down-left"
+                direction = "up-left"
             elif dx == -1 and dy == 0:
                 direction = "left"
             elif dx == -1 and dy == 1:
-                direction = "up-left"
+                direction = "down-left"
 
             # if direction in obstacle_dict key is 1 or 2 it's obstacle
-            # if obstacle_dict[direction] == 1 or obstacle_dict[direction] == 2:
-            #     continue
+            if obstacle_dict[direction] == 1 or obstacle_dict[direction] == 2:
+                continue
 
             if 0 <= new_x < self.env.dic["GRID_WIDTH"] and 0 <= new_y < self.env.dic["GRID_HEIGHT"] and (
             new_x, new_y) not in self.visited and self.body.walk(dx, dy) == PhysAgent.EXECUTED:
