@@ -7,7 +7,7 @@ from physical_agent import PhysAgent
 
 
 class Explorer(AbstractAgent):
-    def __init__(self, env, config_file, resc):
+    def __init__(self, env, config_file, resc, agentnumber):
         """ Construtor do agente random on-line
         @param env referencia o ambiente
         @config_file: the absolute path to the explorer's config file
@@ -19,6 +19,7 @@ class Explorer(AbstractAgent):
         # Specific initialization for the rescuer
         self.resc = resc  # reference to the rescuer agent
         self.rtime = self.TLIM  # remaining time to explore
+        self.agentnumber = agentnumber  # number of the agent
 
         # Initialize the stack with the base position.
         self.stack = [(self.body.x_base, self.body.y_base)]
@@ -37,19 +38,29 @@ class Explorer(AbstractAgent):
             return False
 
         # Make moves in all possible directions, -1 moves in left or up
-        dxs, dys = [0, 1, 0, -1], [1, 0, -1, 0]
+        if self.agentnumber == 1:
+            dxs, dys = [0, 1, 0, -1, 1, 1, -1, -1], [1, 0, -1, 0, 1, -1, 1, -1]
+        elif self.agentnumber == 2:
+            # inverse order of dxs and dys
+            dxs, dys = [0, -1, 0, 1, -1, -1, 1, 1], [-1, 0, 1, 0, -1, 1, -1, 1]
         for dx, dy in zip(dxs, dys):
             new_x, new_y = self.stack[-1][0] + dx, self.stack[-1][1] + dy
-            if 0 <= new_x < self.env.dic["GRID_WIDTH"] and 0 <= new_y < self.env.dic["GRID_HEIGHT"]:
-                if (new_x, new_y) not in self.visited and self.body.walk(dx, dy) == PhysAgent.EXECUTED:
+            if 0 <= new_x < self.env.dic["GRID_WIDTH"] and 0 <= new_y < self.env.dic["GRID_HEIGHT"] and (new_x, new_y) not in self.visited and self.body.walk(dx, dy) == PhysAgent.EXECUTED:
                     self.visited.add((new_x, new_y))
                     self.stack.append((new_x, new_y))
-                    self.rtime -= (self.COST_DIAG if dy and dx else self.COST_LINE)
+                    # self.rtime -= (self.COST_DIAG if dy and dx else self.COST_LINE)
                     break
         else:
             # If we are here it means we got stuck, unroll with stack
             if len(self.stack) > 1:
                 self.stack.pop(-1)
+                # move back to the previous cell
+                prev_x, prev_y = self.stack[-1]
+                dx, dy = prev_x - self.body.x, prev_y - self.body.y
+                move_result = self.body.walk(dx, dy)
+                if move_result != PhysAgent.EXECUTED:
+                    return False
+
 
         seq = self.body.check_for_victim()
         vs = []
