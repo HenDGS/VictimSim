@@ -43,11 +43,14 @@ class Explorer(AbstractAgent):
         elif self.agentnumber == 2:
             # inverse order of dxs and dys
             dxs, dys = [0, -1, 0, 1, -1, -1, 1, 1], [-1, 0, 1, 0, -1, 1, -1, 1]
+
         for dx, dy in zip(dxs, dys):
             obstacle_list = self.body.check_obstacles()
 
-            # map obstacle list to dict with "up", "up-right", "right", "down-right", "down", "down-left", "left", "up-left"
-            obstacle_dict = dict(zip(["up", "up-right", "right", "down-right", "down", "down-left", "left", "up-left"], obstacle_list))
+            # map obstacle list to dict with "up", "up-right", "right", "down-right", "down", "down-left", "left",
+            # "up-left"
+            obstacle_dict = dict(
+                zip(["up", "up-right", "right", "down-right", "down", "down-left", "left", "up-left"], obstacle_list))
 
             new_x, new_y = self.stack[-1][0] + dx, self.stack[-1][1] + dy
 
@@ -74,10 +77,11 @@ class Explorer(AbstractAgent):
                 continue
 
             if 0 <= new_x < self.env.dic["GRID_WIDTH"] and 0 <= new_y < self.env.dic["GRID_HEIGHT"] and (
-            new_x, new_y) not in self.visited and self.body.walk(dx, dy) == PhysAgent.EXECUTED:
+                    new_x, new_y) not in self.visited and self.body.walk(dx, dy) == PhysAgent.EXECUTED:
+                self.check_for_victim()
                 self.visited.add((new_x, new_y))
                 self.stack.append((new_x, new_y))
-                # self.rtime -= (self.COST_DIAG if dy and dx else self.COST_LINE)
+                self.update_remaining_time(dx, dy)
                 break
         else:
             # If we are here it means we got stuck, unroll with stack
@@ -87,9 +91,14 @@ class Explorer(AbstractAgent):
                 prev_x, prev_y = self.stack[-1]
                 dx, dy = prev_x - self.body.x, prev_y - self.body.y
                 move_result = self.body.walk(dx, dy)
-                if move_result != PhysAgent.EXECUTED:
-                    return False
+                if move_result == PhysAgent.EXECUTED:
+                    self.check_for_victim()
+                    self.update_remaining_time(dx, dy)
+                elif move_result == PhysAgent.BUMPED:
+                    print(f"{self.NAME} I bumped into a wall at {self.body.x},{self.body.y}")
+        return True
 
+    def check_for_victim(self):
         seq = self.body.check_for_victim()
         vs = []
         if seq >= 0:
@@ -97,4 +106,12 @@ class Explorer(AbstractAgent):
             self.rtime -= self.COST_READ
             # print(f"Exp: read vital signals of {seq}")
             # print(vs)
-        return True
+
+    def update_remaining_time(self, dx, dy):
+        """ Updates the remaining time of the agent after walking dx, dy steps """
+        if dx != 0 and dy != 0:
+            self.rtime -= self.COST_DIAG
+        else:
+            self.rtime -= self.COST_LINE
+
+
