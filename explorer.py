@@ -39,10 +39,17 @@ class Explorer(AbstractAgent):
 
         # Make moves in all possible directions, -1 moves in left or up
         if self.agentnumber == 1:
+            # down as first move
             dxs, dys = [0, 1, 0, -1, 1, 1, -1, -1], [1, 0, -1, 0, 1, -1, 1, -1]
         elif self.agentnumber == 2:
-            # inverse order of dxs and dys
-            dxs, dys = [0, -1, 0, 1, -1, -1, 1, 1], [-1, 0, 1, 0, -1, 1, -1, 1]
+            # up as first move
+            dxs, dys = [0, -1, 0, 1, 1, 1, -1, -1], [-1, 0, 1, 0, 1, -1, 1, -1]
+        elif self.agentnumber == 3:
+            # right as first move
+            dxs, dys = [1, 0, -1, 0, 1, -1, 1, -1], [0, 1, 0, -1, 1, 1, -1, -1]
+        elif self.agentnumber == 4:
+            # left as first move
+            dxs, dys = [-1, 0, 1, 0, 1, -1, 1, -1], [0, 1, 0, -1, 1, 1, -1, -1]
 
         for dx, dy in zip(dxs, dys):
             obstacle_list = self.body.check_obstacles()
