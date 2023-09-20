@@ -8,6 +8,7 @@ from physical_agent import PhysAgent
 
 class Explorer(AbstractAgent):
     activeExplorers = []
+
     def __init__(self, env, config_file, resc, agentnumber):
         """ Construtor do agente random on-line
         @param env referencia o ambiente
@@ -21,7 +22,7 @@ class Explorer(AbstractAgent):
         self.resc = resc  # reference to the rescuer agent
         self.rtime = self.TLIM  # remaining time to explore
         self.agentnumber = agentnumber  # number of the agent
-        Explorer.activeExplorers.append(self.agentnumber);
+        Explorer.activeExplorers.append(self.agentnumber)
         # Initialize the stack with the base position.
         self.stack = [(self.body.x_base, self.body.y_base)]
         # Initialize the set of visited positions with the base position.
@@ -124,4 +125,30 @@ class Explorer(AbstractAgent):
         else:
             self.rtime -= self.COST_LINE
 
+    def check_obstacle(self, dx, dy):
+        obstacle_list = self.body.check_obstacles()
+        obstacle_dict = dict(
+            zip(["up", "up-right", "right", "down-right", "down", "down-left", "left", "up-left"], obstacle_list))
 
+        if dx == 0 and dy == 1:
+            direction = "down"
+        elif dx == 1 and dy == 1:
+            direction = "down-right"
+        elif dx == 1 and dy == 0:
+            direction = "right"
+        elif dx == 1 and dy == -1:
+            direction = "up-right"
+        elif dx == 0 and dy == -1:
+            direction = "up"
+        elif dx == -1 and dy == -1:
+            direction = "up-left"
+        elif dx == -1 and dy == 0:
+            direction = "left"
+        elif dx == -1 and dy == 1:
+            direction = "down-left"
+
+        # if direction in obstacle_dict key is 1 or 2 it's obstacle
+        if obstacle_dict[direction] == 1 or obstacle_dict[direction] == 2:
+            return True
+        else:
+            return False
