@@ -7,6 +7,7 @@ from physical_agent import PhysAgent
 
 
 class Explorer(AbstractAgent):
+    activeExplorers = []
     def __init__(self, env, config_file, resc, agentnumber):
         """ Construtor do agente random on-line
         @param env referencia o ambiente
@@ -20,7 +21,7 @@ class Explorer(AbstractAgent):
         self.resc = resc  # reference to the rescuer agent
         self.rtime = self.TLIM  # remaining time to explore
         self.agentnumber = agentnumber  # number of the agent
-
+        Explorer.activeExplorers.append(self.agentnumber);
         # Initialize the stack with the base position.
         self.stack = [(self.body.x_base, self.body.y_base)]
         # Initialize the set of visited positions with the base position.
@@ -34,7 +35,9 @@ class Explorer(AbstractAgent):
         # No more actions, time almost ended
         if self.rtime < 10.0:
             print(f"{self.NAME} I believe I've remaining time of {self.rtime:.1f}")
-            self.resc.go_save_victims([], [])
+            Explorer.activeExplorers.remove(self.agentnumber)
+            if len(Explorer.activeExplorers) == 0:
+                self.resc.go_save_victims([], [])
             return False
 
         # Make moves in all possible directions, -1 moves in left or up
