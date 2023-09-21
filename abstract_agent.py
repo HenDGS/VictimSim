@@ -3,6 +3,7 @@
 ### It has the default methods for all the agents supposed to run in
 ### the environment
 
+from itertools import count
 from math import sqrt
 import os
 import random
@@ -92,6 +93,18 @@ class AbstractAgent:
         
         return neighbors
     
+    def calculatePathCost(self,path) -> float:
+        curentPos = (self.body.x,self.body.y)
+        counter = 0.0
+        for Pos in path:
+            dx,dy = curentPos[0] - Pos[0], curentPos[1] - Pos[1]
+            curentPos = Pos
+            if (dx != 0) & (dy!= 0):
+                counter += self.COST_DIAG
+            else:
+                counter += self.COST_LINE  
+        return counter
+
     def astar(self,start, goal, grid) -> list:
         open_list = []
         closed_list = set()
@@ -107,7 +120,8 @@ class AbstractAgent:
                 while current_node:
                     path.append(current_node.position)
                     current_node = current_node.parent
-                return path[::-1]
+                path = path[::-1]
+                return path[1:]
 
             closed_list.add(current_node.position)
 

@@ -29,8 +29,10 @@ class Explorer(AbstractAgent):
         # Initialize the set of visited positions with the base position.
         self.visited = {(self.body.x_base, self.body.y_base)}
         #Teste
+        self.wayback = []
         self.stepcount = 0.0
-        if self.agentnumber == 1:
+        self.returned = False
+        if self.agentnumber == 4:
             self.body.mind.COLOR = (0, 0, 0)
             print(f"start time:{self.rtime}")
 
@@ -39,10 +41,15 @@ class Explorer(AbstractAgent):
         The agent chooses the next action. Execute the exploration using a depth-first search (DFS) algorithm
         """
         
-
+        if len(self.wayback) > 0:
+            nextpos = self.wayback.pop(0)
+            self.body.walk(nextpos[0] - self.body.x, nextpos[1] - self.body.y)
+            self.update_remaining_time(nextpos[0] - self.body.x,nextpos[1] - self.body.y)
+            self.returned = True
+            return True
         # No more actions, time almost ended
-        if self.rtime < 10.0:
-            print(f"{self.NAME} I believe I've remaining time of {self.rtime:.1f}")
+        if self.returned:
+            print(f"{self.NAME} {self.agentnumber} I believe I've remaining time of {self.rtime:.1f}")
             Explorer.activeExplorers.remove(self.agentnumber)
             #Adiciona todos os blocos visitados para o mapa geral
             for x in self.visited:
@@ -51,7 +58,10 @@ class Explorer(AbstractAgent):
             if len(Explorer.activeExplorers) == 0:
                 self.resc.go_save_victims([], [])
             return False
-
+        
+        
+            
+            
         # Make moves in all possible directions, -1 moves in left or up
         if self.agentnumber == 1:
             # down as first move
@@ -65,7 +75,7 @@ class Explorer(AbstractAgent):
         elif self.agentnumber == 4:
             # left as first move
             dxs, dys = [-1, 0, 1, 0, 1, -1, 1, -1], [0, 1, 0, -1, 1, 1, -1, -1]
-
+        
         for dx, dy in zip(dxs, dys):
             obstacle_list = self.body.check_obstacles()
 
@@ -133,16 +143,22 @@ class Explorer(AbstractAgent):
         """ Updates the remaining time of the agent after walking dx, dy steps """
         if dx != 0 and dy != 0:
             self.rtime -= self.COST_DIAG
+            self.stepcount = self.stepcount + self.COST_DIAG
         else:
             self.rtime -= self.COST_LINE
+            self.stepcount = self.stepcount + self.COST_LINE
         #Teste
-        self.stepcount = self.stepcount + 1.0
+        
         timer = 0.0
         counter = self.rtime - self.stepcount
-        if self.agentnumber == 1 & (counter <= timer):     
+        if self.stepcount > self.rtime:     
             if self.body.x_base != self.body.x | self.body.y_base != self.body.y:
                 path = self.astar(Node((self.body.x,self.body.y)),Node((self.body.x_base,self.body.y_base)),self.visited)
-                print(f"distance to start position from ({self.body.x},{self.body.y}): {len(path)}: {path}")
+                print(f"distance to start position from ({self.body.x},{self.body.y}): {len(path)}:")
+                if (self.calculatePathCost(path) * 2 >= self.rtime) & (len(self.wayback) == 0):
+                    print(f"{self.agentnumber} way back set because {self.calculatePathCost(path) * 2} >= {self.rtime}")
+                    for x in path:
+                        self.wayback.append(x)
             
 
 

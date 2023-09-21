@@ -7,6 +7,7 @@ import random
 from abstract_agent import AbstractAgent
 from physical_agent import PhysAgent
 from abc import ABC, abstractmethod
+from abstract_agent import Node
 
 
 ## Classe que define o Agente Rescuer com um plano fixo
@@ -21,7 +22,8 @@ class Rescuer(AbstractAgent):
         # Specific initialization for the rescuer
         self.plan = []              # a list of planned actions
         self.rtime = self.TLIM      # for controlling the remaining time
-        
+        self.map = []
+        self.victims = []
         # Starts in IDLE state.
         # It changes to ACTIVE when the map arrives
         self.body.set_state(PhysAgent.IDLE)
@@ -33,6 +35,8 @@ class Rescuer(AbstractAgent):
         """ The explorer sends the map containing the walls and
         victims' location. The rescuer becomes ACTIVE. From now,
         the deliberate method is called by the environment"""
+        self.map = walls
+        self.victims = victims
         self.body.set_state(PhysAgent.ACTIVE)
         
     
@@ -43,6 +47,16 @@ class Rescuer(AbstractAgent):
 
         # This is a off-line trajectory plan, each element of the list is
         # a pair dx, dy that do the agent walk in the x-axis and/or y-axis
+
+        #Calculate the distance to each victim
+        allvictims = self.victims
+        while allvictims:
+            shortest = 99999.0
+            
+            for victim in allvictims:
+                distance = len(self.astar(Node((self.body.x,self.body.y)),Node((victim[0],victim[1])),self.map))
+                
+            
         self.plan.append((0,1))
         self.plan.append((1,1))
         self.plan.append((1,0))
