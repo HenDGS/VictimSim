@@ -23,7 +23,7 @@ class Explorer(AbstractAgent):
         self.rtime = self.TLIM  # remaining time to explore
         self.agentnumber = agentnumber  # number of the agent
         Explorer.activeExplorers.append(self.agentnumber)
-        self.ttcb = 0.1 * self.TLIM     # (time to come back) indicate the time the agend needs start come back to base
+        self.ttcb = 0.15 * self.TLIM     # (time to come back) indicate the time the agend needs start come back to base
 
 
         # Initialize the stack with the base position.
@@ -67,6 +67,10 @@ class Explorer(AbstractAgent):
                 self.stack.append((agent_x + x_nxt_move, agent_y + y_nxt_move)) 
                 #print(f"Sucesso!!!!!!")                   
 
+            #Se o movimento não foi efetivado significa que acabou a bateria agente
+            else:
+                print("movimento não realizado, acabou o tempo")
+                return
         return
 
     def deliberate(self) -> bool:
@@ -75,8 +79,11 @@ class Explorer(AbstractAgent):
         """
 
         # No more actions, time almost ended
-        if self.euclidianDistance(self.stack[-1], self.stack[0]) > self.ttcb or self.rtime < self.ttcb:
-            print(f"{self.NAME} I believe I've remaining time of {self.rtime:.1f}")
+        if self.rtime < self.ttcb:
+            #print(f"distância euclediana: {self.euclidianDistance(self.stack[-1], self.stack[0])} ||| TimeToComeBack {self.ttcb}")
+            #print(f"Tempo restante: {self.rtime} ||| TimeToComeBack {self.ttcb}\n")
+
+            print(f"{self.NAME} I believe I've remaining time of {self.rtime:.1f}, Agent Number {self.agentnumber}")
             self.come_back_base()
 
             Explorer.activeExplorers.remove(self.agentnumber)
