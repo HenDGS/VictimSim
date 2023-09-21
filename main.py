@@ -46,6 +46,5 @@ if __name__ == '__main__':
     else:
         # data_folder_name = "data"
         data_folder_name = "datasets/data_12x12_10vic"
-        #data_folder_name = "datasets/data_20x20_42vic"
 
     main(data_folder_name)

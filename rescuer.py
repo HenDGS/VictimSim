@@ -76,7 +76,6 @@ class Rescuer(AbstractAgent):
                 self.plan.append((x[0] - lastCalculatedPos[0],x[1] - lastCalculatedPos[1]))
                 lastCalculatedPos = x
             lastPosition = victim
-        print(f"Total of steps planned: {len(self.plan)}")
         """
         self.plan.append((0,1))
         self.plan.append((1,1))
