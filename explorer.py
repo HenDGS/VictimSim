@@ -23,10 +23,51 @@ class Explorer(AbstractAgent):
         self.rtime = self.TLIM  # remaining time to explore
         self.agentnumber = agentnumber  # number of the agent
         Explorer.activeExplorers.append(self.agentnumber)
+        self.ttcb = 0.1 * self.TLIM     # (time to come back) indicate the time the agend needs start come back to base
+
+
         # Initialize the stack with the base position.
         self.stack = [(self.body.x_base, self.body.y_base)]
         # Initialize the set of visited positions with the base position.
         self.visited = {(self.body.x_base, self.body.y_base)}
+
+    def euclidianDistance(self, pos1, pos2):
+        dist = (((pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2)**0.5)
+        return dist 
+    
+    #Implementação do A* com a distância euclediana como euristica.
+    def come_back_base(self):
+        
+        while self.stack[-1] != self.stack[0]:
+            
+            #pegamos as posições do agente no momento
+            agent_x = int(self.stack[-1][0])
+            agent_y = int(self.stack[-1][1])
+            #criamos um dicionário para guardar as informações da melhor escolha
+            x_nxt_move = None
+            y_nxt_move = None
+            Eucledian_dist = float('inf') 
+
+            #print(f"esse é o X {agent_x} e esse é o y {agent_y} da posição atual do agente!!")
+            for x in range(-1, 2):
+                for y in range(- 1, 2):
+                    #selecionamos apenas os pontos ao redor do agente
+                    if x != 0 or y != 0:                            
+                        #print(f'Posição: ({x}, {y})')
+                        #verifica se o caminho está livre ou tem obstaculo
+                        if self.check_obstacle(x, y) == False:
+                            if self.euclidianDistance((agent_x + x, agent_y + y), self.stack[0]) < Eucledian_dist:
+                                #print(f"Distancia euclediana antes: {Eucledian_dist} e agora {self.euclidianDistance((agent_x + x, agent_y + y), self.stack[0])}")
+                                Eucledian_dist = self.euclidianDistance((agent_x + x, agent_y + y), self.stack[0])
+                                x_nxt_move = x #agent_x + x
+                                y_nxt_move = y #agent_y + y
+                                #print(f'Posição: ({x_nxt_move}, {y_nxt_move})')
+            
+            if self.body.walk(x_nxt_move, y_nxt_move) == PhysAgent.EXECUTED:
+                self.stack.append((agent_x + x_nxt_move, agent_y + y_nxt_move)) 
+                #print(f"Sucesso!!!!!!")                   
+
+        return
 
     def deliberate(self) -> bool:
         """
@@ -34,8 +75,10 @@ class Explorer(AbstractAgent):
         """
 
         # No more actions, time almost ended
-        if self.rtime < 10.0:
+        if self.euclidianDistance(self.stack[-1], self.stack[0]) > self.ttcb or self.rtime < self.ttcb:
             print(f"{self.NAME} I believe I've remaining time of {self.rtime:.1f}")
+            self.come_back_base()
+
             Explorer.activeExplorers.remove(self.agentnumber)
             if len(Explorer.activeExplorers) == 0:
                 self.resc.go_save_victims([], [])
