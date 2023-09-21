@@ -4,10 +4,12 @@
 import random
 from abstract_agent import AbstractAgent
 from physical_agent import PhysAgent
+from abstract_agent import Node
 
 
 class Explorer(AbstractAgent):
     activeExplorers = []
+    completeMap = set()
     def __init__(self, env, config_file, resc, agentnumber):
         """ Construtor do agente random on-line
         @param env referencia o ambiente
@@ -26,16 +28,26 @@ class Explorer(AbstractAgent):
         self.stack = [(self.body.x_base, self.body.y_base)]
         # Initialize the set of visited positions with the base position.
         self.visited = {(self.body.x_base, self.body.y_base)}
+        #Teste
+        self.stepcount = 0.0
+        if self.agentnumber == 1:
+            self.body.mind.COLOR = (0, 0, 0)
+            print(f"start time:{self.rtime}")
 
     def deliberate(self) -> bool:
         """
         The agent chooses the next action. Execute the exploration using a depth-first search (DFS) algorithm
         """
+        
 
         # No more actions, time almost ended
         if self.rtime < 10.0:
             print(f"{self.NAME} I believe I've remaining time of {self.rtime:.1f}")
             Explorer.activeExplorers.remove(self.agentnumber)
+            #Adiciona todos os blocos visitados para o mapa geral
+            for x in self.visited:
+                Explorer.completeMap.add(x)
+            #Inicia os Rescuers quando todos os explorers forem finalizados
             if len(Explorer.activeExplorers) == 0:
                 self.resc.go_save_victims([], [])
             return False
@@ -123,5 +135,15 @@ class Explorer(AbstractAgent):
             self.rtime -= self.COST_DIAG
         else:
             self.rtime -= self.COST_LINE
+        #Teste
+        self.stepcount = self.stepcount + 1.0
+        timer = 0.0
+        counter = self.rtime - self.stepcount
+        if self.agentnumber == 1 & (counter <= timer):     
+            if self.body.x_base != self.body.x | self.body.y_base != self.body.y:
+                path = self.astar(Node((self.body.x,self.body.y)),Node((self.body.x_base,self.body.y_base)),self.visited)
+                print(f"distance to start position from ({self.body.x},{self.body.y}): {len(path)}: {path}")
+            
+
 
 
