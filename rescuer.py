@@ -38,6 +38,7 @@ class Rescuer(AbstractAgent):
         self.map = walls
         self.victims = victims
         self.body.set_state(PhysAgent.ACTIVE)
+        self.__planner()
         
     
     def __planner(self):
@@ -48,15 +49,35 @@ class Rescuer(AbstractAgent):
         # This is a off-line trajectory plan, each element of the list is
         # a pair dx, dy that do the agent walk in the x-axis and/or y-axis
 
-        #Calculate the distance to each victim
+        #Calculate the order of the victims
         allvictims = self.victims
+        victimsPath = []
+        lastPosition = (self.body.x,self.body.y)
         while allvictims:
             shortest = 99999.0
-            
+            nearestVictim = (0,0)
+            #Compara a distancia entre todas as vitimas para achar a mais proxima
             for victim in allvictims:
-                distance = len(self.astar(Node((self.body.x,self.body.y)),Node((victim[0],victim[1])),self.map))
-                
-            
+                distance = len(self.astar(Node((lastPosition[0],lastPosition[1])),Node((victim[0],victim[1])),self.map))
+                if distance < shortest:
+                    shortest = distance
+                    nearestVictim = victim
+            #Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
+            victimsPath.append(nearestVictim)
+            allvictims.remove(nearestVictim)
+            lastPosition = nearestVictim
+        lastPosition = (self.body.x,self.body.y)
+        victimsPath.append((self.body.x_base,self.body.y_base))
+        #Adiciona a ordem de movimento no self.plan
+        for victim in victimsPath:
+            path = self.astar(Node((lastPosition[0],lastPosition[1])),Node((victim[0],victim[1])),self.map)
+            lastCalculatedPos = lastPosition
+            for x in path:
+                self.plan.append((x[0] - lastCalculatedPos[0],x[1] - lastCalculatedPos[1]))
+                lastCalculatedPos = x
+            lastPosition = victim
+        print(f"Total of steps planned: {len(self.plan)}")
+        """
         self.plan.append((0,1))
         self.plan.append((1,1))
         self.plan.append((1,0))
@@ -67,6 +88,7 @@ class Rescuer(AbstractAgent):
         self.plan.append((-1,-1))
         self.plan.append((-1,1))
         self.plan.append((1,1))
+        """
         
     def deliberate(self) -> bool:
         """ This is the choice of the next action. The simulator calls this

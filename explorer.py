@@ -8,8 +8,9 @@ from abstract_agent import Node
 
 
 class Explorer(AbstractAgent):
-    activeExplorers = []
-    completeMap = set()
+    activeExplorers = [] #Lista de exploradores ainda ativos
+    completeMap = set() #Mapa completo
+    standbyRescuers = [] #Lista de regate ainda esperando
     def __init__(self, env, config_file, resc, agentnumber):
         """ Construtor do agente random on-line
         @param env referencia o ambiente
@@ -28,26 +29,29 @@ class Explorer(AbstractAgent):
         self.stack = [(self.body.x_base, self.body.y_base)]
         # Initialize the set of visited positions with the base position.
         self.visited = {(self.body.x_base, self.body.y_base)}
-        #Teste
+        #Coleciona as vitimas encontradas
+        self.victims = []
+        #Sequencia de passos para voltar a base
         self.wayback = []
+        #Contagem de passos dados
         self.stepcount = 0.0
+        #Drone retornou a base
         self.returned = False
-        if self.agentnumber == 4:
-            self.body.mind.COLOR = (0, 0, 0)
-            print(f"start time:{self.rtime}")
 
     def deliberate(self) -> bool:
         """
         The agent chooses the next action. Execute the exploration using a depth-first search (DFS) algorithm
         """
         
+        # Se existir um caminho para voltar, então ele é seguido
         if len(self.wayback) > 0:
             nextpos = self.wayback.pop(0)
             self.body.walk(nextpos[0] - self.body.x, nextpos[1] - self.body.y)
             self.update_remaining_time(nextpos[0] - self.body.x,nextpos[1] - self.body.y)
             self.returned = True
             return True
-        # No more actions, time almost ended
+        
+        # Voltou para a base
         if self.returned:
             print(f"{self.NAME} {self.agentnumber} I believe I've remaining time of {self.rtime:.1f}")
             Explorer.activeExplorers.remove(self.agentnumber)
@@ -56,7 +60,13 @@ class Explorer(AbstractAgent):
                 Explorer.completeMap.add(x)
             #Inicia os Rescuers quando todos os explorers forem finalizados
             if len(Explorer.activeExplorers) == 0:
-                self.resc.go_save_victims([], [])
+                self.resc.go_save_victims(Explorer.completeMap, self.victims)
+                for duo in Explorer.standbyRescuers:
+                    rescuer,victims = duo
+                    rescuer.go_save_victims(Explorer.completeMap,victims)
+            else:
+                #Adds the rescuers to the standby list
+                Explorer.standbyRescuers.append((self.resc, self.victims))
             return False
         
         
@@ -124,7 +134,8 @@ class Explorer(AbstractAgent):
                 dx, dy = prev_x - self.body.x, prev_y - self.body.y
                 move_result = self.body.walk(dx, dy)
                 if move_result == PhysAgent.EXECUTED:
-                    self.check_for_victim()
+                    if (self.body.x,self.body.y) not in self.victims:
+                        self.check_for_victim()
                     self.update_remaining_time(dx, dy)
                 elif move_result == PhysAgent.BUMPED:
                     print(f"{self.NAME} I bumped into a wall at {self.body.x},{self.body.y}")
@@ -136,6 +147,7 @@ class Explorer(AbstractAgent):
         if seq >= 0:
             vs = self.body.read_vital_signals(seq)
             self.rtime -= self.COST_READ
+            self.victims.append((self.body.x,self.body.y))
             # print(f"Exp: read vital signals of {seq}")
             # print(vs)
 
@@ -147,18 +159,15 @@ class Explorer(AbstractAgent):
         else:
             self.rtime -= self.COST_LINE
             self.stepcount = self.stepcount + self.COST_LINE
-        #Teste
         
+        #Calculates the time required to return to base
         timer = 0.0
         counter = self.rtime - self.stepcount
         if self.stepcount > self.rtime:     
-            if self.body.x_base != self.body.x | self.body.y_base != self.body.y:
-                path = self.astar(Node((self.body.x,self.body.y)),Node((self.body.x_base,self.body.y_base)),self.visited)
-                print(f"distance to start position from ({self.body.x},{self.body.y}): {len(path)}:")
-                if (self.calculatePathCost(path) * 2 >= self.rtime) & (len(self.wayback) == 0):
-                    print(f"{self.agentnumber} way back set because {self.calculatePathCost(path) * 2} >= {self.rtime}")
-                    for x in path:
-                        self.wayback.append(x)
+            path = self.astar(Node((self.body.x,self.body.y)),Node((self.body.x_base,self.body.y_base)),self.visited)
+            if (self.calculatePathCost(path) * 2 >= self.rtime) & (len(self.wayback) == 0):
+               for x in path:
+                  self.wayback.append(x)
             
 
 
