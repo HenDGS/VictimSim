@@ -3,6 +3,7 @@
 ### It has the default methods for all the agents supposed to run in
 ### the environment
 
+from http.client import NOT_EXTENDED
 from itertools import count
 from math import sqrt
 import os
@@ -96,13 +97,18 @@ class AbstractAgent:
     def calculatePathCost(self,path) -> float:
         curentPos = (self.body.x,self.body.y)
         counter = 0.0
+        diagonal = 0
+        line = 0
         for Pos in path:
             dx,dy = curentPos[0] - Pos[0], curentPos[1] - Pos[1]
             curentPos = Pos
             if (dx != 0) & (dy!= 0):
                 counter += self.COST_DIAG
+                diagonal +=1
             else:
-                counter += self.COST_LINE  
+                counter += self.COST_LINE
+                line +=1
+        #print(f"Path size: {len(path)}, diagonals: {diagonal}, Lines: {line}")
         return counter
 
     def astar(self,start, goal, grid) -> list:
@@ -112,6 +118,7 @@ class AbstractAgent:
         heapq.heappush(open_list, (start.cost, start))
     
         while open_list:
+            #print(f"Next elemet, remmaning: {len(open_list)}")
             current_cost, current_node = heapq.heappop(open_list)
 
             if current_node.position == goal.position:
@@ -133,11 +140,24 @@ class AbstractAgent:
                 if current_node.position[0] - neighbor.position[0] != 0 & current_node.position[1] - neighbor.position[1] != 0:
                     moveCost = 1.5
                 new_cost = current_node.cost + moveCost
+                
+                for x in open_list:
+                    cost, node = x
+                    if node.position == neighbor.position:
+                        if new_cost < node.cost:
+                            node.cost = new_cost
+                            node.parent = current_node
+                        break;
+                else:
+                    heapq.heappush(open_list, (new_cost + self.Heuristic(neighbor.position, goal.position), neighbor))
+
+                """
                 if neighbor not in open_list:
                     heapq.heappush(open_list, (new_cost + self.Heuristic(neighbor.position, goal.position), neighbor))
                 elif new_cost < neighbor.cost:
                     neighbor.cost = new_cost
                     neighbor.parent = current_node
+                    """
         return []
 
     @abstractmethod

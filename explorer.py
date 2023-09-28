@@ -11,6 +11,8 @@ class Explorer(AbstractAgent):
     activeExplorers = [] #Lista de exploradores ainda ativos
     completeMap = set() #Mapa completo
     standbyRescuers = [] #Lista de regate ainda esperando
+    allvictims = []
+    totalExplorers = 0
     def __init__(self, env, config_file, resc, agentnumber):
         """ Construtor do agente random on-line
         @param env referencia o ambiente
@@ -38,6 +40,9 @@ class Explorer(AbstractAgent):
         #Drone retornou a base
         self.returned = False
 
+
+        Explorer.totalExplorers+=1
+
     def deliberate(self) -> bool:
         """
         The agent chooses the next action. Execute the exploration using a depth-first search (DFS) algorithm
@@ -58,12 +63,21 @@ class Explorer(AbstractAgent):
             #Adiciona todos os blocos visitados para o mapa geral
             for x in self.visited:
                 Explorer.completeMap.add(x)
+
+            for x in self.victims:
+                if x not in Explorer.allvictims:
+                    Explorer.allvictims.append(x)
             #Inicia os Rescuers quando todos os explorers forem finalizados
             if len(Explorer.activeExplorers) == 0:
-                self.resc.go_save_victims(Explorer.completeMap, self.victims)
+                print(f"total of victims found: {len(Explorer.allvictims)}")
+                print(f"total of cells explored: {len(Explorer.completeMap)}")
+                clusters = self.Cluster(Explorer.totalExplorers,Explorer.allvictims)
+                self.resc.go_save_victims(Explorer.completeMap, clusters[0])
+                cluster = 1
                 for duo in Explorer.standbyRescuers:
                     rescuer,victims = duo
-                    rescuer.go_save_victims(Explorer.completeMap,victims)
+                    rescuer.go_save_victims(Explorer.completeMap,clusters[cluster])
+                    cluster += 1
             else:
                 #Adds the rescuers to the standby list
                 Explorer.standbyRescuers.append((self.resc, self.victims))
@@ -163,11 +177,50 @@ class Explorer(AbstractAgent):
         #Calculates the time required to return to base
         timer = 0.0
         counter = self.rtime - self.stepcount
-        if self.stepcount > self.rtime:     
-            path = self.astar(Node((self.body.x,self.body.y)),Node((self.body.x_base,self.body.y_base)),self.visited)
-            if (self.calculatePathCost(path) * 2 >= self.rtime) & (len(self.wayback) == 0):
-               for x in path:
-                  self.wayback.append(x)
+        if (self.stepcount > self.rtime):
+            #if self.lastDistanceSteps >= self.lastDistance/10:
+                path = self.astar(Node((self.body.x,self.body.y)),Node((self.body.x_base,self.body.y_base)),self.visited)
+                lastDistance = self.calculatePathCost(path) + self.COST_DIAG * 3
+                if (lastDistance >= self.rtime) & (len(self.wayback) == 0):
+                    print(f"Agent {self.agentnumber}: going back because distance {lastDistance}, time {self.rtime}")
+                    for x in path:
+                        self.wayback.append(x)
+
+    def Cluster(self,num,allVictims):
+        centers = []
+        clusters = []
+        #Gerar os centros aleatorios
+        for i in range(num):
+            added = False
+            while not added:
+                position = allVictims[random.randrange(0,len(allVictims)-1)]
+                if position not in centers:
+                    centers.append(position)
+                    added = True
+        #inicia o cluster com os centros
+        for center in centers:
+            clusters.append([center])
+        #adiciona cada vitima a um cluster com base nos centros
+        for victim in allVictims:
+            if victim in centers:
+                continue
+            nearestDistance = 99999
+            nearestCluster = -1
+            currentCluster = 0
+            #acha o cluster mais proximo a vitima
+            for cluster in clusters:
+                distance = self.Heuristic(victim,cluster[0])
+                if distance < nearestDistance:
+                   nearestDistance = distance
+                   nearestCluster = currentCluster
+                currentCluster+=1
+            clusters[nearestCluster].append(victim)
+        return clusters
+
+
+        
+
+
             
 
 
