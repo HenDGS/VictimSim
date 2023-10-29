@@ -161,9 +161,10 @@ class Explorer(AbstractAgent):
         if seq >= 0:
             vs = self.body.read_vital_signals(seq)
             self.rtime -= self.COST_READ
-            self.victims.append((self.body.x,self.body.y))
-            # print(f"Exp: read vital signals of {seq}")
-            # print(vs)
+            self.victims.append((self.body.x,self.body.y,vs))
+            
+            #print(f"Exp: read vital signals of {seq}")
+            #print(vs)
 
     def update_remaining_time(self, dx, dy):
         """ Updates the remaining time of the agent after walking dx, dy steps """

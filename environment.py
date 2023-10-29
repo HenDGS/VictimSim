@@ -138,7 +138,6 @@ class Env:
 
                 self.dic[keyword] = value               
 
-    
     def add_agent(self, mind, state=PhysAgent.ACTIVE):
         """ This public method adds an agent to the simulator.
         It connects the mind to the body (PhysAgent)
@@ -202,7 +201,6 @@ class Env:
 
         # Update the display
         pygame.display.update()
-        
                 
     def run(self):
         """ This public method is the engine of the simulator. It calls the deliberate
