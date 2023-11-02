@@ -5,6 +5,10 @@ import random
 from abstract_agent import AbstractAgent
 from physical_agent import PhysAgent
 from abstract_agent import Node
+import pandas as pd
+from sklearn import tree
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
 
 class Explorer(AbstractAgent):
@@ -39,6 +43,8 @@ class Explorer(AbstractAgent):
         self.stepcount = 0.0
         #Drone retornou a base
         self.returned = False
+        #modelo de classificação
+        self.modelo_arvore_decisao = None
 
 
         Explorer.totalExplorers+=1
@@ -71,6 +77,14 @@ class Explorer(AbstractAgent):
             if len(Explorer.activeExplorers) == 0:
                 print(f"total of victims found: {len(Explorer.allvictims)}")
                 print(f"total of cells explored: {len(Explorer.completeMap)}")
+
+                #--------Treinar o modelo de classificação e adicionar a classificação (label) para cada vítima
+                #A função Classification retorna um dataframe com as seguintes colunas ["x", "y", "id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "prof_label", "label"]
+                #aonde a coluna label indica a críticidade classificada para determinada vitima
+                Victims_Label = self.Classification(Explorer.allvictims)
+
+                #--------
+                
                 clusters = self.Cluster(Explorer.totalExplorers,Explorer.allvictims)
                 self.resc.go_save_victims(Explorer.completeMap, clusters[0])
                 cluster = 1
@@ -186,6 +200,69 @@ class Explorer(AbstractAgent):
                     print(f"Agent {self.agentnumber}: going back because distance {lastDistance}, time {self.rtime}")
                     for x in path:
                         self.wayback.append(x)
+
+    def Classification(self, allVictims):
+
+        colunas = ["x", "y", "id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "prof_label"]
+
+        # Extrai apenas as listas da tupla
+        coluna_0 = [item[0] for item in allVictims]
+        coluna_1 = [item[1] for item in allVictims]
+        coluna_2_e_seguintes = [item[2] for item in allVictims]
+
+        # Cria um DataFrame com as infos da tupla
+        Vitimas = pd.DataFrame({'x': coluna_0, 'y': coluna_1, **{f'Coluna_{i}': [x[i] for x in coluna_2_e_seguintes] for i in range(len(coluna_2_e_seguintes[0]))}})
+        Vitimas.columns = colunas
+        self.TrainingModel()
+
+        
+        Vitimas_predição = Vitimas[["qPA", "pulso", "fResp"]]
+
+        # Use o modelo para fazer a previsão
+        previsao_novas_vitimas = self.modelo_arvore_decisao.predict(Vitimas_predição)
+        print(f'\nMAYCOM: tamanho previsão {len(previsao_novas_vitimas)}')
+
+        Vitimas['label'] = previsao_novas_vitimas
+        #print(f'\nNova Base Maycom: \n {Vitimas}\n')
+
+        # Calcule a precisão do modelo
+        precisao = accuracy_score(Vitimas['prof_label'], Vitimas['label'])
+        print(f"MAYCOM Precisão do modelo fora de cenários simulados: {precisao}\n")
+
+        return Vitimas
+
+    def TrainingModel(self):
+        colunas = ["id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "label"]
+
+        data = pd.read_csv("./datasets/data_800vic/sinais_vitais_com_label.txt", header=None, names = colunas)
+        #data.append(pd.read_csv("./datasets/data_100x80_132vic/sinais_vitais.txt", header=None, names = colunas))
+        #data.append(pd.read_csv("./datasets/data_20x20_42vic/sinais_vitais_com_label.txt", header=None, names = colunas))
+        #data.append(pd.read_csv("./datasets/data_12x12_10vic/sinais_vitais_com_label.txt", header=None, names = colunas))
+
+        #print(f'Dataframe: \n{data}')
+        #print(f'\nMAYCOM LEN: {data.dtypes}\n')
+
+        # Organiza os dados em uma única matriz
+        X = list(zip(data.qPA, data.pulso, data.fResp))
+        y = data.label
+
+        # Divide os dados em conjuntos de treinamento e teste
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Crie o modelo de árvore de decisão
+        modelo_arvore_decisao = tree.DecisionTreeClassifier(max_depth = 30)
+
+        # Treina o modelo com os dados de treinamento
+        self.modelo_arvore_decisao = modelo_arvore_decisao.fit(X_train, y_train)
+
+        # Faz previsões com o modelo
+        previsoes = modelo_arvore_decisao.predict(X_test)
+
+        # Calcula a precisão do modelo
+        precisao = accuracy_score(y_test, previsoes)
+        print("Precisão do modelo treinamento:", precisao)
+
+        return
 
     def Cluster(self,num,allVictims):
         centers = []
