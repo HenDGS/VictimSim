@@ -8,12 +8,13 @@ from abstract_agent import AbstractAgent
 from physical_agent import PhysAgent
 from abc import ABC, abstractmethod
 from abstract_agent import Node
-
+import pyswarms as ps
+import pygad
 
 ## Classe que define o Agente Rescuer com um plano fixo
 class Rescuer(AbstractAgent):
     def __init__(self, env, config_file):
-        """ 
+        """
         @param env: a reference to an instance of the environment class
         @param config_file: the absolute path to the agent's config file"""
 
@@ -30,7 +31,7 @@ class Rescuer(AbstractAgent):
 
         # planning
         self.__planner()
-    
+
     def go_save_victims(self, walls, victims):
         """ The explorer sends the map containing the walls and
         victims' location. The rescuer becomes ACTIVE. From now,
@@ -39,8 +40,8 @@ class Rescuer(AbstractAgent):
         self.victims = victims
         self.body.set_state(PhysAgent.ACTIVE)
         self.__planner()
-        
-    
+
+
     def __planner(self):
         """ A private method that calculates the walk actions to rescue the
         victims. Further actions may be necessary and should be added in the
@@ -88,7 +89,7 @@ class Rescuer(AbstractAgent):
         self.plan.append((-1,1))
         self.plan.append((1,1))
         """
-        
+
     def deliberate(self) -> bool:
         """ This is the choice of the next action. The simulator calls this
         method at each reasonning cycle if the agent is ACTIVE.
@@ -111,7 +112,7 @@ class Rescuer(AbstractAgent):
             # check if there is a victim at the current position
             seq = self.body.check_for_victim()
             if seq >= 0:
-                res = self.body.first_aid(seq) # True when rescued             
+                res = self.body.first_aid(seq) # True when rescued
 
         return True
 
