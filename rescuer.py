@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from abstract_agent import Node
 import pyswarms as ps
 import pygad
+from sklearn.cluster import KMeans
+
 
 ## Classe que define o Agente Rescuer com um plano fixo
 class Rescuer(AbstractAgent):
@@ -21,8 +23,8 @@ class Rescuer(AbstractAgent):
         super().__init__(env, config_file)
 
         # Specific initialization for the rescuer
-        self.plan = []              # a list of planned actions
-        self.rtime = self.TLIM      # for controlling the remaining time
+        self.plan = []  # a list of planned actions
+        self.rtime = self.TLIM  # for controlling the remaining time
         self.map = []
         self.victims = []
         # Starts in IDLE state.
@@ -41,7 +43,6 @@ class Rescuer(AbstractAgent):
         self.body.set_state(PhysAgent.ACTIVE)
         self.__planner()
 
-
     def __planner(self):
         """ A private method that calculates the walk actions to rescue the
         victims. Further actions may be necessary and should be added in the
@@ -50,33 +51,64 @@ class Rescuer(AbstractAgent):
         # This is a off-line trajectory plan, each element of the list is
         # a pair dx, dy that do the agent walk in the x-axis and/or y-axis
 
-        #Calculate the order of the victims
+        # Calculate the order of the victims
         allvictims = self.victims
         victimsPath = []
-        lastPosition = (self.body.x,self.body.y)
+        lastPosition = (self.body.x, self.body.y)
+
+        # Enquanto tiver vitimas
+        # while allvictims:
+        #     shortest = 99999.0
+        #     nearestVictim = (0, 0)
+        #     # Compara a distancia entre todas as vitimas para achar a mais proxima
+        #     for victim in allvictims:
+        #         distance = len(
+        #             self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map))
+        #         if distance < shortest:
+        #             shortest = distance
+        #             nearestVictim = victim
+        #     # Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
+        #     victimsPath.append(nearestVictim)
+        #     allvictims.remove(nearestVictim)
+        #     lastPosition = nearestVictim
+        # lastPosition = (self.body.x, self.body.y)
+        # victimsPath.append((self.body.x_base, self.body.y_base))
+        # # Adiciona a ordem de movimento no self.plan
+        # for victim in victimsPath:
+        #     path = self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
+        #     lastCalculatedPos = lastPosition
+        #     for x in path:
+        #         self.plan.append((x[0] - lastCalculatedPos[0], x[1] - lastCalculatedPos[1]))
+        #         lastCalculatedPos = x
+        #     lastPosition = victim
+
         while allvictims:
-            shortest = 99999.0
-            nearestVictim = (0,0)
-            #Compara a distancia entre todas as vitimas para achar a mais proxima
+            shortest = float('inf')
+            nearestVictim = (0, 0, 0)
+            # Compara a distancia entre todas as vitimas para achar a mais proxima
             for victim in allvictims:
-                distance = len(self.astar(Node((lastPosition[0],lastPosition[1])),Node((victim[0],victim[1])),self.map))
-                if distance < shortest:
-                    shortest = distance
+                distance = len(
+                    self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
+                )
+                modified_distance = distance * victim[-1][7]
+                if modified_distance < shortest:
+                    shortest = modified_distance
                     nearestVictim = victim
-            #Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
+            # Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
             victimsPath.append(nearestVictim)
             allvictims.remove(nearestVictim)
-            lastPosition = nearestVictim
-        lastPosition = (self.body.x,self.body.y)
-        victimsPath.append((self.body.x_base,self.body.y_base))
-        #Adiciona a ordem de movimento no self.plan
+            lastPosition = nearestVictim[:2]
+        lastPosition = (self.body.x, self.body.y)
+        victimsPath.append((self.body.x_base, self.body.y_base))
+        # Adiciona a ordem de movimento no self.plan
         for victim in victimsPath:
-            path = self.astar(Node((lastPosition[0],lastPosition[1])),Node((victim[0],victim[1])),self.map)
+            path = self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
             lastCalculatedPos = lastPosition
             for x in path:
-                self.plan.append((x[0] - lastCalculatedPos[0],x[1] - lastCalculatedPos[1]))
+                self.plan.append((x[0] - lastCalculatedPos[0], x[1] - lastCalculatedPos[1]))
                 lastCalculatedPos = x
             lastPosition = victim
+
         """
         self.plan.append((0,1))
         self.plan.append((1,1))
@@ -99,7 +131,7 @@ class Rescuer(AbstractAgent):
 
         # No more actions to do
         if self.plan == []:  # empty list, no more actions to do
-           return False
+            return False
 
         # Takes the first action of the plan (walk action) and removes it from the plan
         dx, dy = self.plan.pop(0)
@@ -112,7 +144,6 @@ class Rescuer(AbstractAgent):
             # check if there is a victim at the current position
             seq = self.body.check_for_victim()
             if seq >= 0:
-                res = self.body.first_aid(seq) # True when rescued
+                res = self.body.first_aid(seq)  # True when rescued
 
         return True
-
