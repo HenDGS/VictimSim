@@ -82,10 +82,9 @@ class Explorer(AbstractAgent):
                 # A função Classification retorna um dataframe com as seguintes colunas ["x", "y", "id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "prof_label", "label"]
                 # aonde a coluna label indica a críticidade classificada para determinada vitima
                 Victims_Label = self.Classification(Explorer.allvictims)
-
                 # --------
 
-                clusters = self.Cluster(Explorer.totalExplorers, Explorer.allvictims)
+                clusters = self.Cluster(Explorer.totalExplorers, Victims_Label.to_dict('records'))
                 self.resc.go_save_victims(Explorer.completeMap, clusters[0])
                 cluster = 1
                 for duo in Explorer.standbyRescuers:
@@ -266,30 +265,53 @@ class Explorer(AbstractAgent):
     def Cluster(self, num, allVictims):
         centers = []
         clusters = []
-        # Gerar os centros aleatorios
+        # Gerar os centros, valores salvos serão [x,y,label]
         for i in range(num):
             added = False
+            highestLabel = 0
+            lowestDistance = 0
+            selectedVictim = {}
             while not added:
-                position = allVictims[random.randrange(0, len(allVictims) - 1)]
-                if position not in centers:
-                    centers.append(position)
+                for victim in allVictims:
+                    #Garante que não tenha repetição
+                    if [victim['x'],victim['y'],victim['label']] in centers:
+                        continue
+                    #Checa se a vitima possui label maior do que a vitima salva, se sim a substitui automaticamente
+                    if victim['label'] > highestLabel:
+                        highestLabel = victim['label']
+                        lowestDistance = self.Heuristic([victim['x'],victim['y']],[self.body.x,self.body.y])
+                        selectedVictim = victim
+                    #Checa se a vitima possui o mesmo label da vitima salva, se sim compara a distancia minima
+                    elif victim['label'] == highestLabel:
+                        #Encontra a menor distancia entre a vitima e o centro, e a vitima e outros centros, para garantir uma maior distancia entre os centros
+                        distance = self.Heuristic([victim['x'],victim['y']],[self.body.x,self.body.y])
+                        for center in centers:
+                            localDistance = self.Heuristic([victim['x'],victim['y']],center)
+                            if localDistance < distance:
+                                distance = localDistance
+                        if distance > lowestDistance:
+                            lowestDistance = distance
+                            selectedVictim = victim
+                #se um novo centro for encontrado, ele é adicionado
+                if selectedVictim != {}:
+                    centers.append([selectedVictim['x'],selectedVictim['y'],selectedVictim['label']])
                     added = True
         # inicia o cluster com os centros
         for center in centers:
             clusters.append([center])
         # adiciona cada vitima a um cluster com base nos centros
         for victim in allVictims:
-            if victim in centers:
+            if [victim['x'],victim['y'],victim['label']] in centers:
                 continue
             nearestDistance = 99999
             nearestCluster = -1
             currentCluster = 0
             # acha o cluster mais proximo a vitima
             for cluster in clusters:
-                distance = self.Heuristic(victim, cluster[0])
+                distance = self.Heuristic([victim['x'],victim['y']], cluster[0])
                 if distance < nearestDistance:
                     nearestDistance = distance
                     nearestCluster = currentCluster
                 currentCluster += 1
-            clusters[nearestCluster].append(victim)
+            clusters[nearestCluster].append([victim['x'],victim['y'],victim['label']])
         return clusters

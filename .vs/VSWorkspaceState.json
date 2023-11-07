@@ -1,7 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\datasets",
+    "\\datasets\\data_12x12_10vic",
+    "\\datasets\\data_800vic"
   ],
-  "SelectedNode": "\\main.py",
+  "SelectedNode": "\\explorer.py",
   "PreviewInSolutionExplorer": false
 }
