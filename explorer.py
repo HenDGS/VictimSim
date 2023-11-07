@@ -86,6 +86,15 @@ class Explorer(AbstractAgent):
                 # --------
 
                 clusters = self.Cluster(Explorer.totalExplorers, Explorer.allvictims)
+                print("Clusters gerados:")
+                currentClust = 1
+                for cluster in clusters:
+                    print(f"Cluster {currentClust} ({len(cluster)}):\n(id,x,y,gravidade,label)")
+                    for x,y,data in cluster:
+                        print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
+                    print()
+                    currentClust += 1
+                    
                 self.resc.go_save_victims(Explorer.completeMap, clusters[0])
                 cluster = 1
                 for duo in Explorer.standbyRescuers:
@@ -266,15 +275,34 @@ class Explorer(AbstractAgent):
     def Cluster(self, num, allVictims):
         centers = []
         clusters = []
-        # Gerar os centros aleatorios
+        # Gerar os centros com base na distancia entre outros centro e a label
         for i in range(num):
             added = False
+            highestLabel = 0
+            lowestDistance = 0
+            selectedVictim = []
             while not added:
-                position = allVictims[random.randrange(0, len(allVictims) - 1)]
-                if position not in centers:
-                    centers.append(position)
+                for victim in allVictims:
+                    if victim in centers:
+                        continue
+                    if victim[2][7] > highestLabel:
+                        highestLabel = victim[2][7]
+                        lowestDistance = self.Heuristic(victim,[self.body.x,self.body.y])
+                        selectedVictim = victim
+                    elif victim[2][7] == highestLabel:
+                    #Encontra a menor distancia entre a vitima e o centro, e a vitima e outros centros, para garantir uma maior distancia entre os centros
+                        distance = self.Heuristic(victim,[self.body.x,self.body.y])
+                        for center in centers:
+                            localDistance = self.Heuristic(victim,center)
+                            if localDistance < distance:
+                                distance = localDistance
+                            if distance > lowestDistance:
+                                lowestDistance = distance
+                                selectedVictim = victim
+                if len(selectedVictim) > 0:
+                    centers.append(selectedVictim)
                     added = True
-                    # inicia o cluster com os centros
+        # inicia o cluster com os centros
         for center in centers:
             clusters.append([center])
         # adiciona cada vitima a um cluster com base nos centros
@@ -287,7 +315,7 @@ class Explorer(AbstractAgent):
             # acha o cluster mais proximo a vitima
             for cluster in clusters:
                 distance = self.Heuristic(victim, cluster[0]) * (
-                            5 - victim[2][6])
+                            5 - victim[2][7])
                 if distance < nearestDistance:
                     nearestDistance = distance
                     nearestCluster = currentCluster

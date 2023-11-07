@@ -15,7 +15,9 @@ from sklearn.cluster import KMeans
 
 ## Classe que define o Agente Rescuer com um plano fixo
 class Rescuer(AbstractAgent):
-    def __init__(self, env, config_file):
+    rescuedVictims = [] #Set de vitimas resgatadas com sucesso
+    activeRescuers = [] #Lista de rescuer ativos
+    def __init__(self, env, config_file,agentNumber):
         """
         @param env: a reference to an instance of the environment class
         @param config_file: the absolute path to the agent's config file"""
@@ -27,6 +29,7 @@ class Rescuer(AbstractAgent):
         self.rtime = self.TLIM  # for controlling the remaining time
         self.map = []
         self.victims = []
+        self.agentNumber = agentNumber
         # Starts in IDLE state.
         # It changes to ACTIVE when the map arrives
         self.body.set_state(PhysAgent.IDLE)
@@ -38,6 +41,7 @@ class Rescuer(AbstractAgent):
         """ The explorer sends the map containing the walls and
         victims' location. The rescuer becomes ACTIVE. From now,
         the deliberate method is called by the environment"""
+        Rescuer.activeRescuers.append(self.agentNumber)
         self.map = walls
         self.victims = victims
         self.body.set_state(PhysAgent.ACTIVE)
@@ -52,7 +56,7 @@ class Rescuer(AbstractAgent):
         # a pair dx, dy that do the agent walk in the x-axis and/or y-axis
 
         # Calculate the order of the victims
-        allvictims = self.victims
+        allvictims = self.victims.copy()
         victimsPath = []
         lastPosition = (self.body.x, self.body.y)
 
@@ -131,6 +135,11 @@ class Rescuer(AbstractAgent):
 
         # No more actions to do
         if self.plan == []:  # empty list, no more actions to do
+            Rescuer.activeRescuers.remove(self.agentNumber)
+            if len(Rescuer.activeRescuers) == 0:
+                print(f"Vitimas resgatadas ({len(Rescuer.rescuedVictims)}):\n(id,x,y,gravidade,label)")
+                for x,y,data in Rescuer.rescuedVictims:
+                        print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
             return False
 
         # Takes the first action of the plan (walk action) and removes it from the plan
@@ -145,5 +154,10 @@ class Rescuer(AbstractAgent):
             seq = self.body.check_for_victim()
             if seq >= 0:
                 res = self.body.first_aid(seq)  # True when rescued
-
+                if res:
+                    for victim in self.victims:
+                        if [self.body.x,self.body.y] == [victim[0],victim[1]]:
+                            if victim not in Rescuer.rescuedVictims:
+                                Rescuer.rescuedVictims.append(victim)
+                            break
         return True

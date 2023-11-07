@@ -340,6 +340,7 @@ class Env:
             # Saved victims
             saved = body.get_saved_victims()
             self.__print_victims(saved, "saved","s")
+        
  
             
 
