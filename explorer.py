@@ -262,37 +262,6 @@ class Explorer(AbstractAgent):
 
         return
 
-    # def Cluster(self, num, allVictims):
-    #     centers = []
-    #     clusters = []
-    #     # Gerar os centros aleatorios
-    #     for i in range(num):
-    #         added = False
-    #         while not added:
-    #             position = allVictims[random.randrange(0, len(allVictims) - 1)]
-    #             if position not in centers:
-    #                 centers.append(position)
-    #                 added = True
-    #     # inicia o cluster com os centros
-    #     for center in centers:
-    #         clusters.append([center])
-    #     # adiciona cada vitima a um cluster com base nos centros
-    #     for victim in allVictims:
-    #         if victim in centers:
-    #             continue
-    #         nearestDistance = 99999
-    #         nearestCluster = -1
-    #         currentCluster = 0
-    #         # acha o cluster mais proximo a vitima
-    #         for cluster in clusters:
-    #             distance = self.Heuristic(victim, cluster[0])
-    #             if distance < nearestDistance:
-    #                 nearestDistance = distance
-    #                 nearestCluster = currentCluster
-    #             currentCluster += 1
-    #         clusters[nearestCluster].append(victim)
-    #     return clusters
-
     def Cluster(self, num, allVictims):
         centers = []
         clusters = []
@@ -327,7 +296,7 @@ class Explorer(AbstractAgent):
                 if selectedVictim != {}:
                     centers.append([selectedVictim['x'],selectedVictim['y'],selectedVictim['label']])
                     added = True
-                    # inicia o cluster com os centros
+        # inicia o cluster com os centros
         for center in centers:
             clusters.append([center])
         # adiciona cada vitima a um cluster com base nos centros
