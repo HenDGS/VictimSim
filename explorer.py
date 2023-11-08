@@ -31,7 +31,7 @@ class Explorer(AbstractAgent):
         self.resc = resc  # reference to the rescuer agent
         self.rtime = self.TLIM  # remaining time to explore
         self.agentnumber = agentnumber  # number of the agent
-        Explorer.activeExplorers.append(self.agentnumber);
+        Explorer.activeExplorers.append(self.agentnumber)
         # Initialize the stack with the base position.
         self.stack = [(self.body.x_base, self.body.y_base)]
         # Initialize the set of visited positions with the base position.
@@ -90,11 +90,11 @@ class Explorer(AbstractAgent):
                 currentClust = 1
                 for cluster in clusters:
                     print(f"Cluster {currentClust} ({len(cluster)}):\n(id,x,y,gravidade,label)")
-                    for x,y,data in cluster:
+                    for x, y, data in cluster:
                         print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
                     print()
                     currentClust += 1
-                    
+
                 self.resc.go_save_victims(Explorer.completeMap, clusters[0])
                 cluster = 1
                 for duo in Explorer.standbyRescuers:
@@ -287,13 +287,13 @@ class Explorer(AbstractAgent):
                         continue
                     if victim[2][7] > highestLabel:
                         highestLabel = victim[2][7]
-                        lowestDistance = self.Heuristic(victim,[self.body.x,self.body.y])
+                        lowestDistance = self.Heuristic(victim, [self.body.x, self.body.y])
                         selectedVictim = victim
                     elif victim[2][7] == highestLabel:
-                    #Encontra a menor distancia entre a vitima e o centro, e a vitima e outros centros, para garantir uma maior distancia entre os centros
-                        distance = self.Heuristic(victim,[self.body.x,self.body.y])
+                        # Encontra a menor distancia entre a vitima e o centro, e a vitima e outros centros, para garantir uma maior distancia entre os centros
+                        distance = self.Heuristic(victim, [self.body.x, self.body.y])
                         for center in centers:
-                            localDistance = self.Heuristic(victim,center)
+                            localDistance = self.Heuristic(victim, center)
                             if localDistance < distance:
                                 distance = localDistance
                             if distance > lowestDistance:
@@ -315,10 +315,19 @@ class Explorer(AbstractAgent):
             # acha o cluster mais proximo a vitima
             for cluster in clusters:
                 distance = self.Heuristic(victim, cluster[0]) * (
-                            5 - victim[2][7])
+                        5 - victim[2][7])
                 if distance < nearestDistance:
                     nearestDistance = distance
                     nearestCluster = currentCluster
                 currentCluster += 1
             clusters[nearestCluster].append(victim)
+
+        for cluster in clusters:
+            clusterData = []
+            for victim in cluster:
+                clusterData.append([victim[0], victim[1], *victim[2]])
+            df = pd.DataFrame(clusterData,
+                              columns=["x", "y", "id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "severity"])
+            df.to_csv(f"./clusters/cluster{clusters.index(cluster)}.csv", index=False, sep=';', encoding='utf-8')
+
         return clusters
