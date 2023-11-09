@@ -9,6 +9,7 @@ from physical_agent import PhysAgent
 from abc import ABC, abstractmethod
 from abstract_agent import Node
 import pyswarms as ps
+import pandas as pd
 import pygad
 from sklearn.cluster import KMeans
 
@@ -137,6 +138,15 @@ class Rescuer(AbstractAgent):
         # No more actions to do
         if self.plan == []:  # empty list, no more actions to do
             Rescuer.activeRescuers.remove(self.agentNumber)
+
+            # Save to a csv with agentnumbers a list of rescued victims
+            victimData = []
+            for victim in self.rescuedVictims:
+                victimData.append(victim)
+            df = pd.DataFrame(victimData,
+                              columns=["x", "y", "id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "severity", "agente"])
+            df.to_csv(f"./vitimas/vitimas{self.agentNumber}.csv", index=False, sep=";", encoding="utf-8")
+
             if len(Rescuer.activeRescuers) == 0:
                 print(f"Vitimas resgatadas ({len(Rescuer.rescuedVictims)}):\n(id,x,y,gravidade,label)")
                 for x, y, data in Rescuer.rescuedVictims:
@@ -159,6 +169,8 @@ class Rescuer(AbstractAgent):
                     for victim in self.victims:
                         if [self.body.x, self.body.y] == [victim[0], victim[1]]:
                             if victim not in Rescuer.rescuedVictims:
-                                Rescuer.rescuedVictims.append(victim)
+                                victim_with_agent = [victim[0], victim[1], *victim[2]]
+                                victim_with_agent.append(self.agentNumber)
+                                Rescuer.rescuedVictims.append(victim_with_agent)
                             break
         return True
