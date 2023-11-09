@@ -3,13 +3,14 @@
 ### Demo of use of VictimSim
 
 import os
+import pandas as pd
 import random
 from abstract_agent import AbstractAgent
 from physical_agent import PhysAgent
 from abc import ABC, abstractmethod
 from abstract_agent import Node
-import pandas as pd
 from sklearn.cluster import KMeans
+import numpy as np
 
 
 ## Classe que define o Agente Rescuer com um plano fixo
@@ -47,84 +48,167 @@ class Rescuer(AbstractAgent):
         self.body.set_state(PhysAgent.ACTIVE)
         self.__planner()
 
+    # def __planner(self):
+    #     """ A private method that calculates the walk actions to rescue the
+    #     victims. Further actions may be necessary and should be added in the
+    #     deliberata method"""
+    #
+    #     # This is a off-line trajectory plan, each element of the list is
+    #     # a pair dx, dy that do the agent walk in the x-axis and/or y-axis
+    #
+    #     # Calculate the order of the victims
+    #     allvictims = self.victims.copy()
+    #     victimsPath = []
+    #     lastPosition = (self.body.x, self.body.y)
+    #
+    #     # Enquanto tiver vitimas
+    #     # while allvictims:
+    #     #     shortest = 99999.0
+    #     #     nearestVictim = (0, 0)
+    #     #     # Compara a distancia entre todas as vitimas para achar a mais proxima
+    #     #     for victim in allvictims:
+    #     #         distance = len(
+    #     #             self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map))
+    #     #         if distance < shortest:
+    #     #             shortest = distance
+    #     #             nearestVictim = victim
+    #     #     # Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
+    #     #     victimsPath.append(nearestVictim)
+    #     #     allvictims.remove(nearestVictim)
+    #     #     lastPosition = nearestVictim
+    #     # lastPosition = (self.body.x, self.body.y)
+    #     # victimsPath.append((self.body.x_base, self.body.y_base))
+    #     # # Adiciona a ordem de movimento no self.plan
+    #     # for victim in victimsPath:
+    #     #     path = self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
+    #     #     lastCalculatedPos = lastPosition
+    #     #     for x in path:
+    #     #         self.plan.append((x[0] - lastCalculatedPos[0], x[1] - lastCalculatedPos[1]))
+    #     #         lastCalculatedPos = x
+    #     #     lastPosition = victim
+    #
+    #     while allvictims:
+    #         shortest = float('inf')
+    #         nearestVictim = (0, 0, 0)
+    #         # Compara a distancia entre todas as vitimas para achar a mais proxima
+    #         for victim in allvictims:
+    #             distance = len(
+    #                 self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
+    #             )
+    #             modified_distance = distance * victim[-1][7]
+    #             if modified_distance < shortest:
+    #                 shortest = modified_distance
+    #                 nearestVictim = victim
+    #         # Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
+    #         victimsPath.append(nearestVictim)
+    #         allvictims.remove(nearestVictim)
+    #         lastPosition = nearestVictim[:2]
+    #     lastPosition = (self.body.x, self.body.y)
+    #     victimsPath.append((self.body.x_base, self.body.y_base))
+    #     # Adiciona a ordem de movimento no self.plan
+    #     for victim in victimsPath:
+    #         path = self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
+    #         lastCalculatedPos = lastPosition
+    #         for x in path:
+    #             self.plan.append((x[0] - lastCalculatedPos[0], x[1] - lastCalculatedPos[1]))
+    #             lastCalculatedPos = x
+    #         lastPosition = victim
+    #
+    #     """
+    #     self.plan.append((0,1))
+    #     self.plan.append((1,1))
+    #     self.plan.append((1,0))
+    #     self.plan.append((1,-1))
+    #     self.plan.append((0,-1))
+    #     self.plan.append((-1,0))
+    #     self.plan.append((-1,-1))
+    #     self.plan.append((-1,-1))
+    #     self.plan.append((-1,1))
+    #     self.plan.append((1,1))
+    #     """
+
     def __planner(self):
         """ A private method that calculates the walk actions to rescue the
         victims. Further actions may be necessary and should be added in the
-        deliberata method"""
+        deliberate method"""
 
-        # This is a off-line trajectory plan, each element of the list is
-        # a pair dx, dy that do the agent walk in the x-axis and/or y-axis
+        all_victims = self.victims.copy()
+        number_of_victims = len(all_victims)
 
-        # Calculate the order of the victims
-        allvictims = self.victims.copy()
-        victimsPath = []
+        # Genetic Algorithm specifics
+        population_size = 100
+        generations = 100
+
+        # creating initial population
+        population = [self.create_gnome(number_of_victims) for _ in range(population_size)]
+
+        for _ in range(generations):
+            population = sorted(population, key=self.calculate_fitness)
+
+            # If the best chromosome has a fitness equals to 0, our Genetic Algorithm has found the optimal solution
+            if self.calculate_fitness(population[0]) == 0:
+                break
+
+            new_generation = []
+
+            # Elitism: We are going to keep the 10% of our population
+            elitism_size = (10 * population_size) // 100
+            new_generation.extend(population[:elitism_size])
+
+            # The rest 90% of our population is going to be filled with the offspring of two parents
+            crossover_size = (90 * population_size) // 100
+            for _ in range(crossover_size):
+                parent1 = random.choice(population[:population_size // 2])
+                parent2 = random.choice(population[:population_size // 2])
+                child_chromosome = self.crossover(parent1, parent2)
+                new_generation.append(child_chromosome)
+
+            population = new_generation
+
+        # At this point, our first chromosome on the population list should be the one with the optimal solution
+        optimal_chromosome = population[0]
+
+        # We are going to sort the victims list based on our optimal chromosome
+        victims_path = [all_victims[i] for i in optimal_chromosome]
+
         lastPosition = (self.body.x, self.body.y)
+        victims_path.append((self.body.x_base, self.body.y_base))
 
-        # Enquanto tiver vitimas
-        # while allvictims:
-        #     shortest = 99999.0
-        #     nearestVictim = (0, 0)
-        #     # Compara a distancia entre todas as vitimas para achar a mais proxima
-        #     for victim in allvictims:
-        #         distance = len(
-        #             self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map))
-        #         if distance < shortest:
-        #             shortest = distance
-        #             nearestVictim = victim
-        #     # Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
-        #     victimsPath.append(nearestVictim)
-        #     allvictims.remove(nearestVictim)
-        #     lastPosition = nearestVictim
-        # lastPosition = (self.body.x, self.body.y)
-        # victimsPath.append((self.body.x_base, self.body.y_base))
-        # # Adiciona a ordem de movimento no self.plan
-        # for victim in victimsPath:
-        #     path = self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
-        #     lastCalculatedPos = lastPosition
-        #     for x in path:
-        #         self.plan.append((x[0] - lastCalculatedPos[0], x[1] - lastCalculatedPos[1]))
-        #         lastCalculatedPos = x
-        #     lastPosition = victim
-
-        while allvictims:
-            shortest = float('inf')
-            nearestVictim = (0, 0, 0)
-            # Compara a distancia entre todas as vitimas para achar a mais proxima
-            for victim in allvictims:
-                distance = len(
-                    self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
-                )
-                modified_distance = distance * victim[-1][7]
-                if modified_distance < shortest:
-                    shortest = modified_distance
-                    nearestVictim = victim
-            # Adiciona a vitima mais proxima a lista e usa ela como referencia para achar a proxima vitima
-            victimsPath.append(nearestVictim)
-            allvictims.remove(nearestVictim)
-            lastPosition = nearestVictim[:2]
-        lastPosition = (self.body.x, self.body.y)
-        victimsPath.append((self.body.x_base, self.body.y_base))
         # Adiciona a ordem de movimento no self.plan
-        for victim in victimsPath:
+        for victim in victims_path:
             path = self.astar(Node((lastPosition[0], lastPosition[1])), Node((victim[0], victim[1])), self.map)
-            lastCalculatedPos = lastPosition
+            last_calculated_pos = lastPosition
             for x in path:
-                self.plan.append((x[0] - lastCalculatedPos[0], x[1] - lastCalculatedPos[1]))
-                lastCalculatedPos = x
+                self.plan.append((x[0] - last_calculated_pos[0], x[1] - last_calculated_pos[1]))
+                last_calculated_pos = x
             lastPosition = victim
 
-        """
-        self.plan.append((0,1))
-        self.plan.append((1,1))
-        self.plan.append((1,0))
-        self.plan.append((1,-1))
-        self.plan.append((0,-1))
-        self.plan.append((-1,0))
-        self.plan.append((-1,-1))
-        self.plan.append((-1,-1))
-        self.plan.append((-1,1))
-        self.plan.append((1,1))
-        """
+    @staticmethod
+    def create_gnome(len_victims):
+        gnome = np.arange(len_victims)
+        np.random.shuffle(gnome)
+        return gnome.tolist()
+
+    def calculate_fitness(self, chromosome):
+        return sum([abs(i - v[2][7]) for v, i in zip(self.victims, chromosome)])
+
+    def crossover(self, parent1, parent2):
+        child_chromosome = []
+        for gene1, gene2 in zip(parent1, parent2):
+
+            prob = random.random()
+
+            if prob < 0.45:
+                child_chromosome.append(gene1)
+            elif prob < 0.90:
+                child_chromosome.append(gene2)
+            else:
+                child_chromosome.append(self.mutated_genes(len(parent1)))
+        return child_chromosome
+
+    @staticmethod
+    def mutated_genes(length):
+        return np.random.randint(low=0, high=length)
 
     def deliberate(self) -> bool:
         """ This is the choice of the next action. The simulator calls this
@@ -136,19 +220,13 @@ class Rescuer(AbstractAgent):
         # No more actions to do
         if self.plan == []:  # empty list, no more actions to do
             Rescuer.activeRescuers.remove(self.agentNumber)
-
-            # Save to a csv with agentnumbers a list of rescued victims
-            victimData = []
-            for victim in self.rescuedVictims:
-                victimData.append(victim)
-            df = pd.DataFrame(victimData,
-                              columns=["x", "y", "id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "severity", "agente"])
-            df.to_csv(f"./vitimas/vitimas{self.agentNumber}.csv", index=False, sep=";", encoding="utf-8")
-
             if len(Rescuer.activeRescuers) == 0:
                 print(f"Vitimas resgatadas ({len(Rescuer.rescuedVictims)}):\n(id,x,y,gravidade,label)")
-                for x, y, data in Rescuer.rescuedVictims:
-                    print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
+                # for x, y, data in Rescuer.rescuedVictims:
+                #     print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
+                #     df = pd.DataFrame(Rescuer.rescuedVictims,
+                #                       columns=["id", "x", "y", "gravidade", "label"])
+                #     df.to_csv(f"./vitimas/vitimas.csv", index=False, sep=";", encoding="utf-8")
             return False
 
         # Takes the first action of the plan (walk action) and removes it from the plan
@@ -167,8 +245,8 @@ class Rescuer(AbstractAgent):
                     for victim in self.victims:
                         if [self.body.x, self.body.y] == [victim[0], victim[1]]:
                             if victim not in Rescuer.rescuedVictims:
-                                victim_with_agent = [victim[0], victim[1], *victim[2]]
-                                victim_with_agent.append(self.agentNumber)
-                                Rescuer.rescuedVictims.append(victim_with_agent)
+                                Rescuer.rescuedVictims.append(victim)
+                                with open('vitimas.txt', 'a+') as f:
+                                    f.write(str(victim[0]) + ';' + str(victim[1]) + ';' + str(victim[2][0]) + ';' + str(victim[2][6]) + ';' + str(victim[2][7]) + '\n')
                             break
         return True

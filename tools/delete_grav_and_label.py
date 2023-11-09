@@ -5,7 +5,7 @@
 import csv
 
 inp_sv = "teste_sinais_vitais_com_label.txt"
-out_sv = "teste_cego_sinais_vitais.txt"
+out_sv = "sinais_vitais.txt"
 
 
 # Open the input and output CSV files
