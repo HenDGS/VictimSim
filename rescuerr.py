@@ -147,12 +147,12 @@ class Rescuer(AbstractAgent):
 
             if len(Rescuer.activeRescuers) == 0:
                 print(f"Vitimas resgatadas ({len(Rescuer.rescuedVictims)}):\n(id,x,y,gravidade,label)")
-                for x, y, data in Rescuer.rescuedVictims:
-                    print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
-                    # save as csv with 5 columns
-                    df = pd.DataFrame(Rescuer.rescuedVictims,
-                                        columns=["id", "x", "y", "gravidade", "label"])
-                    df.to_csv(f"./vitimas/vitimas.csv", index=False, sep=";", encoding="utf-8")
+                # for x, y, data in Rescuer.rescuedVictims:
+                #     print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
+                #     # save as csv with 5 columns
+                #     df = pd.DataFrame(Rescuer.rescuedVictims,
+                #                         columns=["id", "x", "y", "gravidade", "label"])
+                #     df.to_csv(f"./vitimas/vitimas.csv", index=False, sep=";", encoding="utf-8")
             return False
 
         # Takes the first action of the plan (walk action) and removes it from the plan
@@ -172,5 +172,8 @@ class Rescuer(AbstractAgent):
                         if [self.body.x, self.body.y] == [victim[0], victim[1]]:
                             if victim not in Rescuer.rescuedVictims:
                                 Rescuer.rescuedVictims.append(victim)
+                                with open('vitimas.txt', 'a+') as f:
+                                    f.write(str(victim[0]) + ';' + str(victim[1]) + ';' + str(victim[2][0]) + ';' + str(
+                                        victim[2][6]) + ';' + str(victim[2][7]) + '\n')
                             break
-        return True
+            return True

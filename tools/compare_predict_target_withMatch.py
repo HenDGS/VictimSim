@@ -121,4 +121,3 @@ tot_grav_sum = sum(grav_sum)
 tot_actual_grav_sum = sum(actual_grav_sum)
 print(f"   Sum of gravities of matched victims = {tot_grav_sum:.2f} of a total of {tot_actual_grav_sum:.2f}")
 print(f"     % of gravities of matched victims = {tot_grav_sum/tot_actual_grav_sum:.2f}")
-

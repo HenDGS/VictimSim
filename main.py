@@ -4,7 +4,7 @@ import time
 ## importa classes
 from environment import Env
 from explorer import Explorer
-from rescuer import Rescuer
+from rescuerr import Rescuer
 
 
 def main(data_folder_name):
@@ -44,9 +44,9 @@ if __name__ == '__main__':
         data_folder_name = sys.argv[1]
     else:
         # data_folder_name = "data"
-        data_folder_name = "datasets/data_12x12_10vic"
+        # data_folder_name = "datasets/data_12x12_10vic"
         # data_folder_name = "datasets/data_20x20_42vic"
         # data_folder_name = "datasets/data_100x80_132vic"
-        # data_folder_name = "datasets/data_100x80_225vic"
+        data_folder_name = "datasets/data_100x80_225vic"
 
     main(data_folder_name)

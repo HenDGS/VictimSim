@@ -85,6 +85,12 @@ class Explorer(AbstractAgent):
 
                 # --------
 
+                #update victims with new labels
+                for victim in Explorer.allvictims:
+                    for row in Victims_Label.itertuples():
+                        if (victim[0] == row.x) & (victim[1] == row.y):
+                            victim[2][7] = row.label
+
                 clusters = self.Cluster(Explorer.totalExplorers, Explorer.allvictims)
                 print("Clusters gerados:")
                 currentClust = 1
