@@ -15,9 +15,10 @@ from sklearn.cluster import KMeans
 
 ## Classe que define o Agente Rescuer com um plano fixo
 class Rescuer(AbstractAgent):
-    rescuedVictims = [] #Set de vitimas resgatadas com sucesso
-    activeRescuers = [] #Lista de rescuer ativos
-    def __init__(self, env, config_file,agentNumber):
+    rescuedVictims = []  # Set de vitimas resgatadas com sucesso
+    activeRescuers = []  # Lista de rescuer ativos
+
+    def __init__(self, env, config_file, agentNumber):
         """
         @param env: a reference to an instance of the environment class
         @param config_file: the absolute path to the agent's config file"""
@@ -138,8 +139,8 @@ class Rescuer(AbstractAgent):
             Rescuer.activeRescuers.remove(self.agentNumber)
             if len(Rescuer.activeRescuers) == 0:
                 print(f"Vitimas resgatadas ({len(Rescuer.rescuedVictims)}):\n(id,x,y,gravidade,label)")
-                for x,y,data in Rescuer.rescuedVictims:
-                        print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
+                for x, y, data in Rescuer.rescuedVictims:
+                    print(f"{data[0]},{x},{y},{data[6]},{data[7]}")
             return False
 
         # Takes the first action of the plan (walk action) and removes it from the plan
@@ -156,7 +157,7 @@ class Rescuer(AbstractAgent):
                 res = self.body.first_aid(seq)  # True when rescued
                 if res:
                     for victim in self.victims:
-                        if [self.body.x,self.body.y] == [victim[0],victim[1]]:
+                        if [self.body.x, self.body.y] == [victim[0], victim[1]]:
                             if victim not in Rescuer.rescuedVictims:
                                 Rescuer.rescuedVictims.append(victim)
                             break
