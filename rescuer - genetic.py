@@ -8,8 +8,6 @@ from abstract_agent import AbstractAgent
 from physical_agent import PhysAgent
 from abc import ABC, abstractmethod
 from abstract_agent import Node
-import pyswarms as ps
-import pygad
 from sklearn.cluster import KMeans
 import numpy as np
 
