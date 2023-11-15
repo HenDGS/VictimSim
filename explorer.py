@@ -234,14 +234,11 @@ class Explorer(AbstractAgent):
 
         # Use o modelo para fazer a previsão
         previsao_novas_vitimas = self.modelo_arvore_decisao.predict(Vitimas_predição)
-        print(f'\nMAYCOM: tamanho previsão {len(previsao_novas_vitimas)}')
-
         Vitimas['label'] = previsao_novas_vitimas
-        # print(f'\nNova Base Maycom: \n {Vitimas}\n')
 
         # Calcule a precisão do modelo
         precisao = accuracy_score(Vitimas['prof_label'], Vitimas['label'])
-        print(f"MAYCOM Precisão do modelo fora de cenários simulados: {precisao}\n")
+        print(f"1 - Métricas de classificação_Precisão do modelo fora de cenários simulados: {precisao}\n")
 
         return Vitimas
 
@@ -249,22 +246,16 @@ class Explorer(AbstractAgent):
         colunas = ["id", "pSist", "pDiast", "qPA", "pulso", "fResp", "grav", "label"]
 
         data = pd.read_csv("./datasets/data_800vic/sinais_vitais_com_label.txt", header=None, names=colunas)
-        # data.append(pd.read_csv("./datasets/data_100x80_132vic/sinais_vitais.txt", header=None, names = colunas))
-        # data.append(pd.read_csv("./datasets/data_20x20_42vic/sinais_vitais_com_label.txt", header=None, names = colunas))
-        # data.append(pd.read_csv("./datasets/data_12x12_10vic/sinais_vitais_com_label.txt", header=None, names = colunas))
-
-        # print(f'Dataframe: \n{data}')
-        # print(f'\nMAYCOM LEN: {data.dtypes}\n')
-
+       
         # Organiza os dados em uma única matriz
         X = list(zip(data.qPA, data.pulso, data.fResp))
         y = data.label
 
         # Divide os dados em conjuntos de treinamento e teste
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_state=42)
 
         # Crie o modelo de árvore de decisão
-        modelo_arvore_decisao = tree.DecisionTreeClassifier(max_depth=30)
+        modelo_arvore_decisao = tree.DecisionTreeClassifier(max_depth = 30, min_samples_leaf=5, min_samples_split=15)
 
         # Treina o modelo com os dados de treinamento
         self.modelo_arvore_decisao = modelo_arvore_decisao.fit(X_train, y_train)
@@ -274,7 +265,7 @@ class Explorer(AbstractAgent):
 
         # Calcula a precisão do modelo
         precisao = accuracy_score(y_test, previsoes)
-        print("Precisão do modelo treinamento:", precisao)
+        print("2 - Métricas de classificação_Precisão do modelo treinamento:", precisao)
 
         return
 
